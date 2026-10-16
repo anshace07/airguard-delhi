@@ -1,0 +1,9 @@
+[project]
+name = "airguard-delhi"
+version = "0.1.0"
+description = "Real-time air quality forecasting and station-level alerts for Delhi-NCR (Kafka + Spark). CSET-371 course project."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
