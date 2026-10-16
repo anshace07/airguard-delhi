@@ -58,8 +58,12 @@ def check_java() -> None:
     major = int(match.group(1)) if match else 0
     if major == 1:  # old style "1.8"
         major = 8
-    ok = major in (11, 17)
-    report(ok, "Java 17 (11 also works)", f"you have Java {major}" + ("" if ok else "; install Java 17, Spark 3.5 officially supports 8/11/17 only"))
+    if major in (11, 17):
+        report(True, "Java 17", f"you have Java {major}")
+    elif major == 21:
+        report(True, "Java", "you have Java 21: it ran our Spark test, but 17 is the officially supported version")
+    else:
+        report(False, "Java 17", f"you have Java {major}; install Java 17")
 
 
 def check_packages() -> None:
