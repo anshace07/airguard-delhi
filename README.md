@@ -70,6 +70,8 @@ Start with your folder's README: it has your steps, your handoff dates, what "do
 
 You need: **Git, Docker Desktop, Java 17, Python 3.10+**. Windows laptops run everything inside **WSL (Ubuntu)** because Spark on plain Windows needs extra hacks that waste days.
 
+**Java must be 17, not 21.** We tested it: on Java 21, Spark 3.5 crashes when converting results to pandas (charts, dashboard). Everything works on 17.
+
 ### Windows (Ansh, Riya Maurya, Ayush)
 
 1. **Install WSL.** Open PowerShell as Administrator:
@@ -81,6 +83,7 @@ You need: **Git, Docker Desktop, Java 17, Python 3.10+**. Windows laptops run ev
 3. **In the Ubuntu window**, install the tools:
    ```bash
    sudo apt update && sudo apt install -y openjdk-17-jdk python3-venv python3-pip git
+   java -version    # must say 17. If it says 21: sudo update-alternatives --config java  → pick 17
    ```
 4. **Clone into your Linux home folder** (not `/mnt/c/...`, which is very slow):
    ```bash

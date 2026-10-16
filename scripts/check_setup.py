@@ -58,12 +58,11 @@ def check_java() -> None:
     major = int(match.group(1)) if match else 0
     if major == 1:  # old style "1.8"
         major = 8
-    if major in (11, 17):
+    if major == 17:
         report(True, "Java 17", f"you have Java {major}")
-    elif major == 21:
-        report(True, "Java", "you have Java 21: it ran our Spark test, but 17 is the officially supported version")
     else:
-        report(False, "Java 17", f"you have Java {major}; install Java 17")
+        # Tested: on Java 21, Spark 3.5's Arrow/pandas conversion crashes (toPandas, Streamlit, charts).
+        report(False, "Java 17", f"you have Java {major}; install Java 17 and set JAVA_HOME to it (see README)")
 
 
 def check_packages() -> None:
@@ -76,6 +75,7 @@ def check_packages() -> None:
         "dotenv": "python-dotenv",
         "streamlit": "streamlit",
         "matplotlib": "matplotlib",
+        "setuptools": "setuptools",  # Spark 3.5 needs it on Python 3.12+ (distutils)
     }
     missing = []
     for module, pip_name in needed.items():
