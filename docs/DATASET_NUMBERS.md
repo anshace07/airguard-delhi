@@ -1,6 +1,6 @@
 # Dataset numbers (measured, not guessed)
 
-**Owner:** Riya Maurya. Fill this in from real runs and add the date you measured. These numbers go straight into the report's "why big data" section, so never estimate here.
+**Owner:** Riya Maurya. Fill this in from real runs and add the date you measured. `python -m ingestion.dataset_numbers` measures most of it for you (`outputs/dataset_numbers.md`); the benchmark rows come from `outputs/benchmark.csv`. These numbers go straight into the report's "why big data" section, so never estimate here.
 
 ## Historical data (OpenAQ archive)
 

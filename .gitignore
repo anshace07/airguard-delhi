@@ -35,3 +35,6 @@ Thumbs.db
 # Tableau / Power BI temporary files
 *.tmp
 ~$*
+
+# Submission zip (scripts/package_submission.py)
+submission/

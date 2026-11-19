@@ -57,7 +57,8 @@ Start with your folder's README: it has your steps, your handoff dates, what "do
 | File | What it is |
 |---|---|
 | [`CONTRACT.md`](CONTRACT.md) | **The shared formats.** Every message, file and column the four parts exchange. Read this first. |
-| [`docs/TIMELINE.md`](docs/TIMELINE.md) | 12-day sprint, day by day, with handoffs |
+| [`docs/TIMELINE.md`](docs/TIMELINE.md) | Final-day plan (who runs what, when) + the original sprint |
+| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | The 3-minute demo click path and backups |
 | [`docs/RUBRIC_CHECKLIST.md`](docs/RUBRIC_CHECKLIST.md) | Every rubric requirement → where the evidence comes from → who owns it |
 | [`CLAUDE.md`](CLAUDE.md) | Rules your AI coding tool follows automatically in this repo |
 | `common/` | Shared code: paths, AQI categories, Spark session, schemas. Import it, don't copy it. |
@@ -128,23 +129,47 @@ Stuck for more than 30 minutes on setup? Post the exact error in the group. Ansh
 
 ---
 
-## Running things
+## Run the whole system (on the demo laptop)
 
-Always run from the repo root, with the virtual environment active. Run Python modules with `-m` so they can import `common/`.
+Always run from the repo root, with the virtual environment active (`source .venv/bin/activate`). Python modules run with `-m` so they can import `common/`. Pull the latest code first: `git pull`, then `pip install -r requirements.txt`.
 
-| What | Command | Owner |
-|---|---|---|
-| Kafka on / off | `docker compose -f infra/docker-compose.yml up -d` / `down` | everyone |
-| Peek at live messages | `docker exec -it airguard-kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic aq_live --from-beginning` | everyone |
-| Tests | `python -m pytest -q` | everyone |
-| Live fetcher | `python -m ingestion.fetch_live` | Role 1 (to be built) |
-| Replay a past day | `python -m ingestion.fetch_live --replay 2025-11-05` | Role 1 (to be built) |
-| Clean history | `python -m pipeline.clean_history` | Role 2 (to be built) |
-| Streaming job | `python -m pipeline.stream_job` | Role 2 (to be built) |
-| Train models | `python -m ml.train` | Role 3 (to be built) |
-| Dashboard | `streamlit run dashboard/app.py` | Role 4 (to be built) |
+**0. Check the code works on this laptop (about 5-10 min, no internet or Kafka needed):**
+```bash
+python -m pytest -q                 # 37 tests
+bash scripts/smoke_test.sh          # the whole chain on SYNTHETIC data, in a throwaway copy
+```
 
-Update this table when your part is built.
+**1. Batch path: data, cleaning, features, models, charts (one command, re-runnable):**
+```bash
+bash scripts/run_batch.sh           # Delhi-NCR, 2025 + 2026. QUICK=1 for faster training, SKIP_DOWNLOAD=1 to skip downloads
+```
+It runs, in order: `ingestion.stations` → `ingestion.download_archive` → `ingestion.weather_history` → `pipeline.clean_history` → `pipeline.build_features` → `ml.train_regression` → `ml.train_classification` → `ml.charts` → `ingestion.eda` → `ingestion.dataset_numbers`. Rough laptop times: download 10-20 min, cleaning 5-20 min, training 20-40 min. Then optionally `python -m pipeline.benchmark` (pandas vs Spark).
+
+**2. Live path: four terminals, all on the demo laptop:**
+```bash
+docker compose -f infra/docker-compose.yml up -d          # terminal 1: Kafka (check: python scripts/check_setup.py --kafka)
+python -m ingestion.fetch_live --backfill-hours 30         # terminal 2: live feed (last 30 h first, then every 15 min)
+python -m pipeline.stream_job                              # terminal 3: Spark Structured Streaming -> data/predictions/latest.csv
+streamlit run dashboard/app.py                             # terminal 4: dashboard at http://localhost:8501
+```
+
+**Backups, in order of preference:**
+
+| Problem | Do this |
+|---|---|
+| OpenAQ API down or slow | `python -m ingestion.fetch_live --replay latest --speed 60` (one stored hour per minute, dashboard shows REPLAY) |
+| Kafka / Docker will not start | Fetcher `--sink files` + stream job `--source files` (still Spark Structured Streaming, file source instead of Kafka) |
+| Street map stays blank | Sidebar → "Simple map (works offline)" |
+| Nothing live at all | Sidebar → "Use SAMPLE data" (clearly labelled SAMPLE) |
+
+**Handy commands:**
+
+| What | Command |
+|---|---|
+| Peek at live messages | `docker exec -it airguard-kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic aq_live --from-beginning` |
+| One fetch cycle, print only | `python -m ingestion.fetch_live --once --dry-run` |
+| What-if from the terminal | `python -m ml.score --horizon 3` |
+| Pack the LMS zip | `python scripts/package_submission.py` |
 
 ---
 

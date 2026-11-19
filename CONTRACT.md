@@ -94,10 +94,12 @@ All data lives under `data/` and is **never committed to Git** (too big). Paths 
 | `data/raw/openaq/` | Role 1 | Role 2 | OpenAQ archive files as downloaded (`csv.gz`, narrow format) |
 | `data/raw/weather/` | Role 1 | Role 2 | Historical hourly weather per station |
 | `data/raw/stations.csv` | Role 1 | everyone | `station_id, station_name, city, lat, lon` |
-| `data/clean/readings/` | Role 2 | Role 2, Role 3 | Parquet, one row per station per hour, **same columns as the live reading** minus `source`, `ingested_at_utc`. Partitioned by `year`. |
+| `data/clean/readings/` | Role 2 | Role 2, Role 3 | Parquet, one row per station per hour, **same columns as the live reading** minus `source`, `ingested_at_utc`. `ts_utc` is stored as a Parquet timestamp (UTC). Partitioned by `year`. |
 | `data/features/history/` | Role 2 | Role 3 | Parquet, clean readings + feature columns + target columns (section 5) |
 | `data/features/latest_by_station.parquet` | Role 2 (live job) | Role 3 `score()` | The newest feature row for each station. Overwritten every batch. |
-| `data/live/readings/` | Role 2 (live job) | Role 2 | Every live reading received, Parquet, append only |
+| `data/live/readings/` | Role 2 (live job) | Role 2 | Every live reading received, Parquet, append only, partitioned by `source` |
+| `data/live/inbox/` | Role 1 (`--sink files`) | Role 2 (`--source files`) | **Fallback only, if Kafka will not start.** One JSON-lines file per send, same message format as section 3. Written under a hidden name, then renamed. Added Nov 19. |
+| `data/live/fetch_state.json` | Role 1 | Role 1 | Newest hour already sent per station, so each station-hour is sent once |
 | `data/predictions/latest.csv` | Role 2 (live job) | Role 4 | Current snapshot, section 6. Overwritten every batch (write to a temp file, then rename). |
 | `data/predictions/history/` | Role 2 (live job) | Role 4, report | Every prediction ever made, Parquet, append only |
 | `data/samples/` | Role 4 | Role 4 | Fake sample files for building the dashboard early. Must say SAMPLE in the file name. |
@@ -162,6 +164,10 @@ Role 2 may add more feature columns. Add them to this table in the same pull req
 | `ml/models/category/` | Best category classifier (PipelineModel). Output: `prediction` (index) + `category` (name). |
 | `ml/models/alert_h3/` | Yes/no classifier: "Very Poor or worse in 3 hours". |
 | `ml/models/feature_columns.json` | The exact list of input feature columns, in order. |
+| `ml/models/model_info.json` | Which algorithm was saved for each model folder, with its test scores. The live job takes `model_name` from here. Added Nov 19. |
+| `ml/results/confusion_matrix.csv` | `model, actual, predicted, count` for the category classifiers |
+| `ml/results/roc_points.csv` | `model, auc, fpr, tpr` for the alert classifiers |
+| `ml/results/pred_vs_actual.csv` | One test week at one station per horizon: `horizon_h, model, station_id, station_name, ts_utc, persistence, actual, predicted` |
 | `ml/results/results.csv` | One row per model per horizon per experiment (below) |
 | `ml/results/feature_importance.csv` | `model, horizon_h, feature, importance` |
 | `outputs/charts/` | All result charts as PNG (comparison bars, confusion matrix, ROC curve, feature importance) |
@@ -172,7 +178,9 @@ Model files are large and not committed. Results CSVs and charts **are** committ
 
 `task` (`regression` / `classification` / `alert`), `model` (`Persistence`, `LinearRegression`, `DecisionTree`, `RandomForest`, `GBT`, `LogisticRegression`), `horizon_h`, `feature_set` (`pollutants_only` / `with_weather`), `mae`, `rmse`, `r2`, `accuracy`, `precision`, `recall`, `f1`, `auc`, `n_train`, `n_test`, `train_period`, `test_period`.
 
-Leave a metric empty when it does not apply to that task.
+Leave a metric empty when it does not apply to that task. The `Persistence` baseline is written once under each `feature_set` (same numbers), so every comparison has its baseline. For `task = alert`, precision/recall/F1 are for the "yes" class at a 0.5 threshold; for `classification` they are weighted over the 6 categories.
+
+`ml/score.py` also offers `score_many(station_id, horizon_h, scenarios)`: several override dicts scored in one Spark job (the what-if wind sweep).
 
 ### The what-if function (Role 3 → Role 4)
 

@@ -1,10 +1,27 @@
 # Role 2: Processing Engine
 
-**Owner:** Ansh Singh · **Branch:** `ansh/pipeline` · **Works closest with:** everyone (integration owner)
+**Owner:** Ansh Singh · **Works closest with:** everyone (integration owner)
 
 **Your job in one line:** turn raw data into clean data and features with Spark, run the live engine that scores every new reading, and make all four parts connect.
 
 This is the big data core of the project: the part the course grades most.
+
+**Status (Nov 19):** built and tested on synthetic data (`python -m pytest -q`, `bash scripts/smoke_test.sh`). Not yet run on the real data: that happens on your laptop. Read every file below and be able to explain it.
+
+| File | What it does | Run |
+|---|---|---|
+| `common/features.py` | `add_features(df, with_targets)`: lags 1/3/6 h, rolling 3/6/24 h, 1-hour change, IST time features, targets. Range windows on the timestamp, so a missing hour gives a null lag. Used by BOTH batch and live. | (imported) |
+| `clean_history.py` | Narrow → wide, units → µg/m³, drops negatives/zero PM/impossible values/duplicates, hourly mean (15-min data too), station names, weather join, Parquet by year, data-quality summary → `outputs/data_quality.csv` | `python -m pipeline.clean_history` |
+| `build_features.py` | Features for training → `data/features/history/`, newest row per station → `latest_by_station.parquet`, `--sample` for Role 3 | `python -m pipeline.build_features --sample` |
+| `benchmark.py` | pandas vs Spark, same job, 25/50/100% of the data; time + pandas peak memory → `outputs/benchmark.csv`, `outputs/charts/benchmark.png` | `python -m pipeline.benchmark` |
+| `stream_job.py` | Structured Streaming from Kafka (or `--source files`), `foreachBatch`: append → read last 30 h → features → models → trend/spike/hotspot/alerts → atomic `latest.csv` + history. Checkpoint in `data/live/_checkpoint/`. | `python -m pipeline.stream_job` |
+
+**Restart test (do it once, screenshot it):** stop the stream job with Ctrl+C while the fetcher keeps sending, start it again: it continues from the checkpoint and the new batch includes everything sent meanwhile. Nothing is lost or counted twice (re-processed messages are de-duplicated on `(station_id, ts_utc)`, latest `ingested_at_utc` wins).
+
+**Alert rules (in `stream_job.py`, explain these):** an alert is active when (1) the forecast for that horizon is Very Poor or Severe, or (2) the last 1-hour jump is a spike (z-score ≥ 3 against the station's last 30 h, and at least +20 µg/m³), or (3) for 3 h, the alert classifier gives ≥ 50% chance of Very Poor or worse. The reason text says which. Trend: rising/falling if PM2.5 moved at least 10 µg/m³ and 10% over the last 3 hours.
+
+**Time zones:** all data is UTC. `common/spark.get_spark()` also sets the Python process to UTC, because Python otherwise converts Spark timestamps with the laptop's time zone (IST), shifting them by 5:30. That bug was found and fixed during testing; it is a good viva story.
+
 
 ---
 
@@ -64,18 +81,6 @@ System architecture, big data justification with benchmark, data cleaning and qu
 
 ---
 
-## Starter prompt for your AI coding tool
+## Changing the code
 
-```
-Read CLAUDE.md, CONTRACT.md and pipeline/README.md first.
-
-Build my part (Role 2) step by step. Stop after each step, run it on real data, and explain it to me in simple words before continuing.
-
-1) pipeline/clean_history.py: read the OpenAQ archive csv.gz files in common.config.PATHS.raw_openaq (inspect the real columns first, the format is narrow: one row per sensor/parameter per hour). Pivot to one row per station per hour with pm25, pm10, no2, so2, co, o3 (CONTRACT.md units), join station metadata from PATHS.stations_csv and hourly weather from PATHS.raw_weather, drop negatives/impossible values and duplicates on (station_id, ts_utc), write Parquet partitioned by year to PATHS.clean_readings. Print a data quality summary.
-
-2) common/features.py: implement add_features(df, with_targets) exactly per CONTRACT.md section 5 using Spark window functions partitioned by station_id and ordered by the timestamp, with range-based windows so missing hours give nulls. Write a small pytest in tests/ with a hand-made DataFrame that checks lags, a gap, and that targets look forward only. Then pipeline/build_features.py writes PATHS.features_history. Also write a small sample (1 month, 5 stations) for my teammate.
-
-3) pipeline/benchmark.py: run the same pivot + group-by job with pandas and with Spark on the full data; record wall time and peak memory (or the pandas MemoryError); print a comparison table.
-
-4) pipeline/stream_job.py: Structured Streaming from Kafka (common.spark.get_spark(kafka=True), topic common.config.KAFKA_TOPIC), parse JSON with common.schemas.live_reading_schema(). In foreachBatch: append new rows to PATHS.live_readings, read the last 30 hours for those stations, call add_features(with_targets=False), keep the newest row per station, save PATHS.features_latest, load the PipelineModels from common.config.model_path(h) for h in HORIZONS, predict, add categories with common.spark.category_col, compute trend, hotspot_rank and alert as described in pipeline/README.md, write PATHS.predictions_latest atomically (temp file + rename) with exactly the CONTRACT.md section 6 columns, and append to PATHS.predictions_history. Checkpoint in PATHS.stream_checkpoint. Until the real models exist, use a stand-in "prediction = current pm25" clearly marked as a placeholder.
-```
+The code is built. If you change something, start your AI tool with: *"Read CLAUDE.md, CONTRACT.md and this folder's README first"*, change one thing at a time, and re-run `python -m pytest -q` and `bash scripts/smoke_test.sh`.

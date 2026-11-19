@@ -9,6 +9,8 @@ Repo: **https://github.com/anshace07/airguard-delhi** (branch `main`)
 
 ## 0. Status on Nov 7, 2026 (read this first)
 
+> **Update Thu Nov 19:** all four roles' code is now built (one pull request into `main`) and tested on synthetic data in the exact OpenAQ format: 37 pytest tests plus `scripts/smoke_test.sh`, which runs the whole chain end to end. It has **not** yet run against the real APIs (that needs a laptop with internet and the OpenAQ key). The two agreed fixes from section 18 are applied (`ingestion/README.md`, `docs/TIMELINE.md`). What to do next, hour by hour: `docs/TIMELINE.md`. How to run: README, "Run the whole system".
+
 - **Repo on GitHub:** still only the 3 setup commits from Oct 16 (`3449c35`, `54cb8b0`, `308c91a`). No role code has been pushed and there are no other branches. If anyone built code locally, it is not on GitHub yet.
 - **Milestone 1** (report Ch 1–2, Oct 5–9) and **Milestone 2** (live demo + viva, Oct 26–29) dates have passed. This chat has no record of how they went.
 - **Final submission:** finals week **Nov 16–20**. **Hard LMS deadline: Nov 20, 2026**, and late requests are not entertained.

@@ -35,6 +35,9 @@ class PATHS:
 
     live_readings = DATA_DIR / "live" / "readings"
     stream_checkpoint = DATA_DIR / "live" / "_checkpoint"
+    # Fallback when Kafka will not start: the fetcher writes JSON files here and
+    # the stream job reads them with Spark's file source (CONTRACT.md section 4).
+    live_inbox = DATA_DIR / "live" / "inbox"
 
     predictions_latest = DATA_DIR / "predictions" / "latest.csv"
     predictions_history = DATA_DIR / "predictions" / "history"
@@ -46,6 +49,7 @@ class PATHS:
     results_csv = REPO_ROOT / "ml" / "results" / "results.csv"
     feature_importance_csv = REPO_ROOT / "ml" / "results" / "feature_importance.csv"
 
+    outputs = REPO_ROOT / "outputs"
     outputs_eda = REPO_ROOT / "outputs" / "eda"
     outputs_charts = REPO_ROOT / "outputs" / "charts"
     outputs_screenshots = REPO_ROOT / "outputs" / "screenshots"
