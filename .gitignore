@@ -38,3 +38,6 @@ Thumbs.db
 
 # Submission zip (scripts/package_submission.py)
 submission/
+
+# Run logs
+logs/
