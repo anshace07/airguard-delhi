@@ -1,10 +1,27 @@
 # Role 3: Prediction Models
 
-**Owner:** Ayush Mishra · **Branch:** `ayush/ml` · **Works closest with:** Ansh (Role 2), Riya Katiyar (Role 4)
+**Owner:** Ayush Mishra · **Works closest with:** Ansh (Role 2), Riya Katiyar (Role 4)
 
 **Your job in one line:** build and compare the models that predict PM2.5 1, 3 and 6 hours ahead, and prove which one is best, honestly.
 
 Every number in the results chapter comes from you.
+
+**Status (Nov 19):** built and tested on synthetic data. Train on the real features on your laptop (or the demo laptop), then read every file and be able to explain it.
+
+| File | What it does | Run |
+|---|---|---|
+| `data.py` | Feature sets (`pollutants_only`, `with_weather`), time split with a 6-hour embargo, row caps | (imported) |
+| `modeling.py` | The pipelines: cast → Imputer (median) → VectorAssembler → algorithm; model settings (`--quick` = smaller) | (imported) |
+| `train_regression.py` | Persistence baseline + LR, DT, RF, GBT × 1/3/6 h; MAE/RMSE/R²; best per horizon saved to `ml/models/pm25_h*/`; weather experiment; feature importance; one week predicted vs actual | `python -m ml.train_regression` |
+| `train_classification.py` | Category 3 h ahead (LR, DT, RF; confusion matrix) + alert yes/no (LR, RF, GBT; ROC/AUC); best saved to `ml/models/category/`, `ml/models/alert_h3/` | `python -m ml.train_classification` |
+| `charts.py` | Every result chart → `outputs/charts/` | `python -m ml.charts` |
+| `score.py` | The what-if function (CONTRACT.md section 7) + a terminal wind test | `python -m ml.score --horizon 3` |
+| `results_io.py` | Writes `results.csv` and `model_info.json` | (imported) |
+
+Typical laptop time with the defaults (400k training rows): about 15-30 minutes for regression and 5-10 for classification. Add `--quick` to halve it, or `--max-train-rows 1000000` to use more data if there is time.
+
+**Honesty built in:** the printout and `results.csv` show for every model whether it beats persistence. Report it as it comes out. Same for the weather experiment and the wind test in `score.py`: on synthetic data, higher wind sometimes *raised* the forecast. That is a real modelling effect (with current PM2.5 held fixed, windy hours that are still polluted tend to have a dirtier background), and a good example of "what-if is not causation".
+
 
 ---
 
@@ -58,22 +75,6 @@ Algorithms and why they suit the problem, training setup, evaluation metrics, re
 
 ---
 
-## Starter prompt for your AI coding tool
+## Changing the code
 
-```
-Read CLAUDE.md, CONTRACT.md and ml/README.md first.
-
-Build my part (Role 3) step by step with PySpark MLlib (start Spark with common.spark.get_spark). Stop after each step, run it, and explain it to me in simple words before continuing.
-
-1) ml/data.py: load features from common.config.PATHS.features_history; time-based train/test split (configurable cut-off date); feature column lists for "pollutants_only" and "with_weather"; drop rows with a null target.
-
-2) ml/train_regression.py: Persistence baseline plus LinearRegression, DecisionTreeRegressor, RandomForestRegressor, GBTRegressor for each horizon in common.config.HORIZONS (target_pm25_1h/3h/6h). Each model is a Pipeline (Imputer or null-handling, VectorAssembler, model). Evaluate MAE, RMSE, R2 on the test period. Run the weather experiment for the best model. Append rows to PATHS.results_csv exactly in the CONTRACT.md section 7 format. Save the best model per horizon to common.config.model_path(h) and the feature list to ml/models/feature_columns.json.
-
-3) ml/train_classification.py: label = CPCB category of target_pm25_3h using common.aqi; LogisticRegression, DecisionTreeClassifier, RandomForestClassifier; accuracy, weighted precision, recall, F1, confusion matrix. Plus a binary classifier for "Very Poor or worse in 3h" with ROC curve and AUC. Append to results.csv; save the best ones to ml/models/category/ and ml/models/alert_h3/.
-
-4) ml/importance.py: feature importances from the RF and GBT models into PATHS.feature_importance_csv.
-
-5) ml/charts.py: comparison bar chart per horizon including the baseline, confusion matrix, ROC curve, feature importance, predicted vs actual for one station for one week. Save PNGs in PATHS.outputs_charts.
-
-6) ml/score.py: score(station_id, horizon_h, overrides=None) per CONTRACT.md section 7, reading PATHS.features_latest. Cache the Spark session and loaded models so repeated calls are fast. Add a small test.
-```
+The code is built. If you change something, start your AI tool with: *"Read CLAUDE.md, CONTRACT.md and this folder's README first"*, change one thing at a time, and re-run `python -m pytest -q` and `bash scripts/smoke_test.sh`.
