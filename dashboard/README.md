@@ -1,10 +1,29 @@
 # Role 4: Dashboard & Demo
 
-**Owner:** Riya Katiyar · **Branch:** `riya-k/dashboard` · **Works closest with:** Ansh (predictions), Ayush (results, `score()`), Riya Maurya (EDA)
+**Owner:** Riya Katiyar · **Works closest with:** Ansh (predictions), Ayush (results, `score()`), Riya Maurya (EDA)
 
 **Your job in one line:** build everything the evaluator sees: the live map, the what-if panel and the BI dashboard. Own the demo.
 
 You never wait for anyone: start today with fake sample data in the exact contract format, then switch to real data when it arrives.
+
+**Status (Nov 19):** built and tested headlessly on synthetic data (all four pages render; `bash scripts/smoke_test.sh`). Run it, click through every page, take the screenshots, and be able to explain every chart.
+
+```bash
+python -m dashboard.make_sample      # fake SAMPLE predictions (backup / building)
+streamlit run dashboard/app.py       # open the link it prints (http://localhost:8501)
+```
+
+| Page | Shows | Data |
+|---|---|---|
+| Live map | Stations coloured by CPCB category, KPIs, active alerts + reasons, worst 5, per-station 1/3/6 h forecast. Refreshes every 60 s. REPLAY and SAMPLE banners. Sidebar: "Simple map (works offline)" if the street map stays blank. | `data/predictions/latest.csv` |
+| What-if | Station + horizon, sliders for wind / humidity / current PM2.5 → `ml.score`, normal vs scenario forecast, wind sweep chart. "Model scenario, not proof of cause." | `ml/models/`, `data/features/latest_by_station.parquet` |
+| Trends (BI) | KPI tiles + seasons, daily cycle, Oct-Nov & Diwali, worst stations, spikes, weather links, correlation, big-data numbers, benchmark, data quality | `outputs/eda/`, `outputs/*.csv` |
+| Model performance | Beats-persistence verdict per horizon, model comparison, weather experiment, classifier table, confusion matrix, ROC, feature importance, forecast vs actual | `ml/results/` |
+
+**BI tool:** the rubric accepts "Power BI, Tableau, Databricks *or equivalent*". The two BI pages above are built into the Streamlit app, so the dashboard requirement is covered even if there is no time for Tableau. If there is time, Tableau Public pages can be built from the same CSVs (`outputs/eda/*.csv`, `ml/results/results.csv`) for extra polish.
+
+The demo click path is in `docs/DEMO_SCRIPT.md`.
+
 
 ---
 
@@ -63,18 +82,6 @@ Dashboard and visualisation design, BI insights, SDG alignment, demo/user walkth
 
 ---
 
-## Starter prompt for your AI coding tool
+## Changing the code
 
-```
-Read CLAUDE.md, CONTRACT.md and dashboard/README.md first.
-
-Build my part (Role 4) step by step in dashboard/. Stop after each step, run it, and explain it to me in simple words before continuing.
-
-1) make_sample.py: generate data/samples/SAMPLE_predictions_latest.csv with ~30 fake stations around Delhi (lat 28.4-28.9, lon 76.9-77.4), 3 rows per station (horizon_h 1, 3, 6), exactly the columns and order in common.schemas.PREDICTION_FIELDS, realistic values across all 6 categories, a few alerts, source="live". Name stations "Sample Station 1..30".
-
-2) app.py: Streamlit multipage app. Put the repo root on sys.path at the top so "from common..." works. Page "Live Map": read the predictions file (sidebar toggle: sample vs real common.config.PATHS.predictions_latest), map with pydeck or plotly, dots coloured with common.aqi.CATEGORY_COLORS, legend with all 6 categories, auto-refresh every 60 s, station selector showing current PM2.5, category, trend arrow, 1/3/6 h forecasts and alert reason, sidebar with active alerts and top 5 worst stations, "last updated" in IST, a big banner if source == "replay".
-
-3) Page "What-if": station + horizon selectors, sliders for wind_speed_ms, humidity_pct and current pm25, call ml.score.score(station_id, horizon_h, overrides). Until ml/score.py exists, use a clearly labelled placeholder function. Show original vs new forecast and category side by side, caption "Model scenario, not proof of cause."
-
-Keep the design clean and readable on a projector: large fonts, high contrast.
-```
+The code is built. If you change something, start your AI tool with: *"Read CLAUDE.md, CONTRACT.md and this folder's README first"*, change one thing at a time, and re-run `python -m pytest -q` and `bash scripts/smoke_test.sh`.
