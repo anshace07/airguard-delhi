@@ -1,4 +1,45 @@
-# 12-day sprint: Fri Oct 16 → Tue Oct 27, 2026
+# Final run plan: Thu Nov 19 (night) → Fri Nov 20 (LMS deadline)
+
+All code is now on `main` (see the README's "Run the whole system"). What is left is running it on real data, screenshots, the hand-written report and the upload.
+
+## Two agreed rules
+
+1. **Everything live runs on Ansh's laptop** (the demo machine): Kafka, the live fetcher, the stream job and the dashboard. A fetcher on any other laptop sends into that laptop's own Kafka, which the demo never sees.
+2. **Handoffs are "run my script on your laptop", not "send my data".** Data is GBs and never goes on GitHub. Code, results CSVs and charts go through GitHub; model folders and data samples through Google Drive only if ever needed.
+
+## Thursday night (Nov 19)
+
+| Who | What | Command / check |
+|---|---|---|
+| **Ansh** (demo laptop) | Pull, install, tests, smoke test | `git pull && pip install -r requirements.txt && python -m pytest -q && bash scripts/smoke_test.sh` |
+| **Ansh** | Put the OpenAQ key in `.env`; start Kafka; start the live fetcher **now** so live data piles up overnight | `docker compose -f infra/docker-compose.yml up -d` then `python -m ingestion.fetch_live --backfill-hours 30` (leave the terminal open, laptop plugged in, sleep off) |
+| **Ansh** | Start the batch path in a second terminal (download → clean → features → models → charts → EDA) | `QUICK=1 bash scripts/run_batch.sh` (drop `QUICK=1` if there is time) |
+| **Riya Maurya** | Read `ingestion/` until you can explain every file; check the time convention (ingestion/README) | `python -m ingestion.fetch_live --once --dry-run` on your own laptop is a safe test |
+| **Ayush** | Read `ml/` until you can explain every file and metric | `python -m pytest -q tests/test_features.py` |
+| **Riya Katiyar** | Read `dashboard/app.py`; open the dashboard on SAMPLE data | `python -m dashboard.make_sample && streamlit run dashboard/app.py` |
+| **Everyone** | Write your report sections **by hand** (0% AI). Use the real numbers as they arrive. | — |
+
+Do not run the stream job while `run_batch.sh` is training on an 8 GB laptop (two Spark processes). Start it when the batch is done: it reads everything the fetcher sent overnight from Kafka.
+
+## Friday (Nov 20)
+
+| When | Who | What |
+|---|---|---|
+| Morning | Ansh | Check the fetcher log ran all night. Start `python -m pipeline.stream_job` and `streamlit run dashboard/app.py`. Restart test: Ctrl+C the stream job, start it again, it continues. |
+| Morning | Ansh | Optional: `python -m pipeline.benchmark` for the pandas vs Spark numbers. |
+| Morning | Riya Katiyar + Ansh | **Screenshots** into `outputs/screenshots/`: every dashboard page, the fetcher and stream job terminals, Kafka console consumer, test run, charts. |
+| Midday | Riya Maurya | `python -m ingestion.dataset_numbers` → copy into `docs/DATASET_NUMBERS.md` and the report. |
+| Midday | Everyone | Put real numbers into your hand-written sections. Riya Katiyar compiles. Turnitin check (< 10% similarity, 0% AI). |
+| Afternoon | Ansh | Commit the real results: `git add ml/results outputs && git commit -m "Real results" && git push` (data/ and models are ignored automatically). |
+| Before the deadline | Riya Katiyar | `python scripts/package_submission.py` → upload the zip + report PDF + plagiarism report on the LMS. Check the exact LMS closing time today. |
+
+If the live API fails at any point: `python -m ingestion.fetch_live --replay latest --speed 60` (shown as REPLAY). If Kafka fails: fetcher `--sink files` + stream job `--source files`.
+
+---
+
+# History: the original 12-day sprint (Oct 16-27)
+
+## 12-day sprint: Fri Oct 16 → Tue Oct 27, 2026 (not followed; kept for the project-management section)
 
 Milestone 2 (live demo + viva) is in the week of **Oct 26–29**. If your lab slot is **Oct 26**, squeeze Days 11–12 into Sun Oct 25.
 

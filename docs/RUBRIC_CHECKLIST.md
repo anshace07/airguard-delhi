@@ -9,14 +9,14 @@ Tick a box only when the evidence (file, screenshot, number) actually exists.
 |---|---|---|---|---|
 | a | Problem definition + faculty-approved dataset | Problem statement in report; ma'am's approval of OpenAQ (save the message/email) | Riya Maurya | [ ] |
 | b | Real-time data analytics | Live OpenAQ → Kafka → Spark Structured Streaming; days of live data collected | Riya Maurya + Ansh | [ ] |
-| c | End-to-end pipeline in Spark: ingestion, cleaning, transformation, features | `pipeline/clean_history.py`, `common/features.py`, data quality summary | Ansh | [ ] |
-| d | 4–5 ML models in PySpark, compared with metrics + charts (bars, confusion matrix, ROC, tables) | `ml/results/results.csv`, `outputs/charts/` | Ayush | [ ] |
-| e | Power BI / Tableau / Databricks dashboard with KPIs and trends | Tableau pages 1 and 2 | Riya Katiyar | [ ] |
-| f | EDA and statistical analysis | `outputs/eda/` charts + written findings | Riya Maurya | [ ] |
+| c | End-to-end pipeline in Spark: ingestion, cleaning, transformation, features | `ingestion/download_archive.py`, `pipeline/clean_history.py` (+ `outputs/data_quality.csv`), `common/features.py`, `pipeline/build_features.py` | Ansh | [ ] |
+| d | 4–5 ML models in PySpark, compared with metrics + charts (bars, confusion matrix, ROC, tables) | `ml/train_regression.py`, `ml/train_classification.py` → `ml/results/results.csv`, `outputs/charts/` (regression_comparison, confusion_matrix, roc_curve, feature_importance, weather_experiment) | Ayush | [ ] |
+| e | Power BI / Tableau / Databricks dashboard with KPIs and trends | Streamlit BI pages "Trends (BI)" + "Model performance" (KPIs, trends, decision support); Tableau optional from the same CSVs | Riya Katiyar | [ ] |
+| f | EDA and statistical analysis | `ingestion/eda.py` → `outputs/eda/` (seasons, daily cycle, Oct-Nov/Diwali, correlation, weather bins, missing data, spikes) + written findings | Riya Maurya | [ ] |
 | g | Advanced tech integration (Kafka, Docker, Hadoop/HDFS, Structured Streaming…) | Kafka in Docker, Structured Streaming; optional HDFS | Ansh | [ ] |
-| h | Scalable, large data, near-real-time | Dataset numbers + pandas vs Spark benchmark + live latency | Ansh | [ ] |
+| h | Scalable, large data, near-real-time | `outputs/dataset_numbers.md` + `pipeline/benchmark.py` (`outputs/benchmark.csv`) + live latency | Ansh | [ ] |
 | i | SDG alignment | SDG 3 + SDG 11 section | Riya Katiyar | [ ] |
-| j | Decision support and practical impact | Station alerts, hotspot ranking, what-if panel | Ansh + Riya Katiyar | [ ] |
+| j | Decision support and practical impact | `pipeline/stream_job.py` alerts + reasons, hotspot rank, trend; dashboard What-if page (`ml/score.py`) | Ansh + Riya Katiyar | [ ] |
 | — | **Spark is mandatory**; Hadoop/Pig/Hive only supplementary | All heavy processing and ML in Spark | Ansh + Ayush | [ ] |
 
 ## Milestone 2 (Oct 26–29, 12 marks)
