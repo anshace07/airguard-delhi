@@ -25,7 +25,18 @@ def get_spark(app_name: str = "airguard", kafka: bool = False):
 
     kafka=True downloads the Kafka connector the first time (needs internet once).
     """
+    import os
+    import time
+
     from pyspark.sql import SparkSession
+
+    # Python turns Spark timestamps into datetimes (collect(), toPandas(), lit(datetime))
+    # using the PROCESS time zone. On a laptop set to IST that silently shifts times by
+    # 5:30. Running the Python side in UTC too makes every conversion exact.
+    # (The dashboard converts to IST explicitly, so display is unaffected.)
+    os.environ["TZ"] = "UTC"
+    if hasattr(time, "tzset"):
+        time.tzset()
 
     builder = (
         SparkSession.builder.appName(app_name)
